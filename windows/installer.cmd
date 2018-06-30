@@ -16,7 +16,7 @@ set PLATFORM_BACKUP_HOME=%PLATFORM_HOME%.BAK
 
 :kill-proc
 	REM make sure processes related to Nexial are killed, before installation
-	call %INSTALLER_HOME%\killproc.cmd
+	call %INSTALLER_HOME%\killprocs.cmd
 	set RC=%ERRORLEVEL%
 	if not "%RC%"=="0" goto all-done
 
