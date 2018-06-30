@@ -26,4 +26,3 @@ if not "%RC%"=="0" (
 
 :all-done
 	exit /b %RC%
-

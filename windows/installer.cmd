@@ -100,4 +100,3 @@ set PLATFORM_BACKUP_HOME=%PLATFORM_HOME%.BAK
 
 :all-done
 	exit /b %RC%
-

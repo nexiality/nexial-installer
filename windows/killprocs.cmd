@@ -1,5 +1,5 @@
-@setlocal enableextensions enabledelayedexpansion
 @echo off
+setlocal enableextensions enabledelayedexpansion
 
 set INSTALLER_HOME=%~dp0
 set RC=0
