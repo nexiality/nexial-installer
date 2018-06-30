@@ -37,14 +37,16 @@ set PLATFORM_BACKUP_HOME=%PLATFORM_HOME%.BAK
 
 :backup-platform
 	REM rename existing platform directory to backup
-	echo [INFO] moving %PLATFORM_HOME% to %PLATFORM_BACKUP_HOME%
-	move /Y %PLATFORM_HOME% %PLATFORM_BACKUP_HOME% 1> nul
-	set RC=%ERRORLEVEL%
-	if not "%RC%"=="0" (
-		echo [ERROR] UNABLE TO BACK UP %PLATFORM_HOME% to %PLATFORM_BACKUP_HOME%.
-		echo [ERROR] CHECK THAT BOTH DIRECTORIES ARE NOT LOCKED, AND NO COMMAND WINDOWS IS
-		echo [ERROR] POINTING TO EITHER DIRECTORIES.
-		goto all-done
+	if exist %PLATFORM_HOME%\nul (
+        echo [INFO] moving %PLATFORM_HOME% to %PLATFORM_BACKUP_HOME%
+        move /Y %PLATFORM_HOME% %PLATFORM_BACKUP_HOME% 1> nul
+        set RC=%ERRORLEVEL%
+        if not "%RC%"=="0" (
+            echo [ERROR] UNABLE TO BACK UP %PLATFORM_HOME% to %PLATFORM_BACKUP_HOME%.
+            echo [ERROR] CHECK THAT BOTH DIRECTORIES ARE NOT LOCKED, AND NO COMMAND WINDOWS IS
+            echo [ERROR] POINTING TO EITHER DIRECTORIES.
+            goto all-done
+        )
 	)
 
 	REM now we are ready to upgrade; recreate platform directory
