@@ -26,7 +26,7 @@ In a nutshell, the installer performs the following activities:
 ### Get Installer
 At this time, the Windows' version is available for us. Mac and Linux version shall be available shortly.
 
-The Windows installer is [available](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.0/nexial-installer-v1.0.zip) here.
+The Windows installer is [available](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.0/nexial-installer-v1.1.zip) here.
 
 
 ### Usage
