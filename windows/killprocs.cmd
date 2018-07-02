@@ -56,7 +56,7 @@ goto all-done
 	if errorlevel 1 (
 		REM found at least one instance running
 		if not "%PROCEED_ALL%"=="true" (
-			choice /C YNA /T 30 /D N /M "%progname% must be terminated to install Nexial. Proceed?"
+			choice /C YNA /T 15 /D A /M "%progname% must be terminated to install Nexial. Proceed?"
 			if ERRORLEVEL 3 set PROCEED_ALL=true
 			if ERRORLEVEL 2 goto abort-killproc
 		)
