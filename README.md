@@ -24,18 +24,20 @@ In a nutshell, the installer performs the following activities:
 
 
 ### Get Installer
-At this time, the Windows' version is available for us. Mac and Linux version shall be available shortly.
+The latest version is 1.2. Click on the appropriate link below to get the installer.
 
-The Windows installer is [available](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.0/nexial-installer-v1.1.zip) here.
+- [Linux installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.2/nexial-installer.linux.zip)
+- [Mac installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.2/nexial-installer.mac.zip)
+- [Windows installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.2/nexial-installer.windows.zip)
 
 
 ### Usage
 1. Download the installer (link above).
 2. Unzip the installer to (Windows) `C:\projects\nexial-installer` or (MacOSX/Linux) `~/projects/nexial-installer`.
-3. Run the `installer.cmd|sh` batch file.
+3. Run the installer script.
    - (Windows) From Windows Explorer, go to `C:\projects\nexial-installer`, double-click on `installer.cmd`.
-   - (MacOSX) From Finder, go to `~/projects/nexial-installer`, double-click on `installer.sh`.
-   - (Linux) Open terminal, execute `cd ~/projects/nexial-installer; ./installer.sh`.
+   - (MacOSX) From Finder, go to `~/projects/nexial-installer`, double-click on `install.sh`.
+   - (Linux) Open terminal, execute `cd ~/projects/nexial-installer; ./install.sh`.
 
 
 ### Limitation
