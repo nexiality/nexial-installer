@@ -15,7 +15,7 @@ if [ ${RC} -ne 0 ] ; then
 	exit ${RC}
 fi
 
-wget -q --show-progress --content-disposition --no-check-certificate --directory-prefix=${DOWNLOAD_LOC} ${DISTRO_URL}
+wget -q --progress=bar --content-disposition --no-check-certificate --directory-prefix=${DOWNLOAD_LOC} ${DISTRO_URL}
 RC=$?
 if [ ${RC} -ne 0 ] ; then
 	echo [ERROR] UNABLE TO DOWNLOAD LATEST DISTRO. CHECK YOUR INTERNET ACCESS.
