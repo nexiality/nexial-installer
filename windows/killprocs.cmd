@@ -5,6 +5,18 @@ set INSTALLER_HOME=%~dp0
 set RC=0
 set PROCEED_ALL=false
 
+REM Checks for Jenkins Master, if master set options
+
+for /F "tokens=3 delims=: " %%H in ('sc query "Jenkins" ^| findstr "        STATE"') do (
+  if /I "%%H" EQU "RUNNING" (
+   Echo "jenkins is running"
+   set PROCEED_ALL=true
+  )
+)
+
+REM Checks for jenkins slave, if slave then set options
+IF EXIST C:\jenkins\agent.jar set PROCEED_ALL=true
+
 call :find-and-kill java.exe
 if not "%RC%"=="0" goto all-done
 
