@@ -24,7 +24,7 @@ In a nutshell, the installer performs the following activities:
 
 
 ### Get Installer
-The latest version is 1.2. Click on the appropriate link below to get the installer.
+The latest version is 1.3. Click on the appropriate link below to get the installer.
 
 - [Linux installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.linux.zip)
 - [Mac installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.mac.zip)
