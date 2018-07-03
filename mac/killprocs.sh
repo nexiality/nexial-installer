@@ -40,9 +40,23 @@ function find-and-kill() {
 	fi
 }
 
+function is-jenkins() {
+    # Check for environment variables that are indicative of a Jenkins master or slave
+    if [ "${JENKINS_URL}" != "" ] ; then
+        if [ "${JOB_URL}" != "" ] ; then
+            echo "[INFO] detected either running as a Jenkins master or a Jenkins slave;"
+            echo "[INFO] proceed to terminate all Nexial related processes."
+            echo
+            PROCEED_ALL=true
+        fi
+    fi
+}
+
 
 RC=0
 PROCEED_ALL=false
+
+is-jenkins
 
 find-and-kill "java.+\-Dnexial\.home\="
 if [ ${RC} -ne 0 ] ; then exit ${RC}; fi

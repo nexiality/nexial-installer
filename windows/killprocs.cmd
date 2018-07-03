@@ -6,16 +6,28 @@ set RC=0
 set PROCEED_ALL=false
 
 REM Checks for Jenkins Master, if master set options
-
 for /F "tokens=3 delims=: " %%H in ('sc query "Jenkins" ^| findstr "        STATE"') do (
-  if /I "%%H" EQU "RUNNING" (
-   Echo "jenkins is running"
-   set PROCEED_ALL=true
-  )
+    if /I "%%H" EQU "RUNNING" (
+        echo [INFO] Jenkins is currently running;
+        echo [INFO] proceed to terminate all Nexial related processes.
+        echo.
+        set PROCEED_ALL=true
+    )
 )
 
 REM Checks for jenkins slave, if slave then set options
-IF EXIST C:\jenkins\agent.jar set PROCEED_ALL=true
+REM IF EXIST C:\jenkins\agent.jar set PROCEED_ALL=true
+
+REM Check for environment variables that are indicative of a Jenkins master or slave
+if defined JENKINS_URL (
+    if defined JOB_URL (
+        echo [INFO] detected either running as a Jenkins master or a Jenkins slave;
+        echo [INFO] proceed to terminate all Nexial related processes.
+        echo.
+        set PROCEED_ALL=true
+    )
+)
+
 
 call :find-and-kill java.exe
 if not "%RC%"=="0" goto all-done
