@@ -1,7 +1,7 @@
 # nexial-installer
 
 ### What is this?
-> _a platform-specific installer for Nexial; suitable for local and CI/CD environments._
+> _a cross-platform installer for Nexial; suitable for local and CI/CD environments._
 
 
 ### Introduction
