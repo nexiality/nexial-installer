@@ -21,22 +21,24 @@ import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import org.nexial.installer.Const.PadOption;
 
+import static org.nexial.installer.Const.LINE_WIDTH;
 import static org.nexial.installer.Const.LOG_DATE_FORMAT;
 import static org.nexial.installer.Const.PadOption.*;
 
 public class OutputUtils {
 
     protected static void showError(String message) {
-        System.err.println(padCenter("!!!!! ", "ERROR", " !!!!!", Const.LINE_WIDTH));
-        System.err.println(padCenter("! ", message, " !", Const.LINE_WIDTH));
-        System.err.println(repeatLine("!", Const.LINE_WIDTH));
+        System.err.println();
+        System.err.println("!-------------------------------- ERROR FOUND ---------------------------------!");
+        System.err.println(padCenter("! ", message, " !", LINE_WIDTH));
+        System.err.println("!" + repeatLine("-", LINE_WIDTH - 2) + "!");
     }
 
     protected static String pad(String leftBorder, String message, String rightBorder, int width, PadOption option) {
         if (leftBorder == null) { leftBorder = ""; }
         if (message == null) { message = ""; }
         if (rightBorder == null) { rightBorder = ""; }
-        if (width < 1) { width = Const.LINE_WIDTH; }
+        if (width < 1) { width = LINE_WIDTH; }
 
         int padLength = width - (leftBorder.length() + message.length() + rightBorder.length());
 
@@ -86,7 +88,7 @@ public class OutputUtils {
 
     protected static String repeatLine(String repeats, int width) {
         if (StringUtils.isBlank(repeats)) { repeats = " "; }
-        if (width < 1) { width = Const.LINE_WIDTH; }
+        if (width < 1) { width = LINE_WIDTH; }
 
         String line = "";
         while (line.length() < width) { line += repeats; }

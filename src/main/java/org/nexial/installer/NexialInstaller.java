@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012-2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.nexial.installer;
 
 import java.io.File;
@@ -8,13 +24,11 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.IterableUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.gson.JsonArray;
@@ -36,8 +50,18 @@ import static org.nexial.installer.OutputUtils.*;
  * little 3rd party dependencies) so that it is easier to distribute and to maintain.
  */
 public class NexialInstaller {
+    private static final PlatformSpecificLocationHandler DOWNLOAD_LOCATION_HANDLER =
+        new PlatformSpecificLocationHandler() {
+            @Override
+            public File resolveForWindows(String base) { return new File(DOWNLOAD_DIR + base + ".zip"); }
 
-    protected static final PlatformSpecificLocationHandler NEXIAL_LOCATION_HANDLER =
+            @Override
+            public File resolveForLinux(String base) { return new File(DOWNLOAD_DIR + base + ".zip"); }
+
+            @Override
+            public File resolveForMac(String base) { return resolveForLinux(base); }
+        };
+    private static final PlatformSpecificLocationHandler NEXIAL_LOCATION_HANDLER =
         new PlatformSpecificLocationHandler() {
             @Override
             public File resolveForWindows(String base) { return new File(PROJECT_BASE_WIN + base); }
@@ -48,21 +72,14 @@ public class NexialInstaller {
             @Override
             public File resolveForMac(String base) { return resolveForLinux(base); }
         };
-    protected static final PlatformSpecificLocationHandler DOWNLOAD_LOCATION_HANDLER =
-        new PlatformSpecificLocationHandler() {
-            @Override
-            public File resolveForWindows(String base) { return new File(PROJECT_BASE_WIN + base + ".zip"); }
 
-            @Override
-            public File resolveForLinux(String base) { return new File(PROJECT_BASE_NIX + base + ".zip"); }
-
-            @Override
-            public File resolveForMac(String base) { return resolveForLinux(base); }
-        };
+    private static Properties props = initProps();
+    private static File installTarget = resolveNexialHome();
+    private static File backupTarget = resolveNexialHomeBackup();
+    private static boolean keepDownloaded;
 
     private static int exitCode;
-    private static Properties props;
-    private static Map<String, String> availableVersions;
+    private static Map<String, String> availableVersions = new TreeMap<>();
 
     protected interface PlatformSpecificLocationHandler {
         File resolveForWindows(String base);
@@ -74,10 +91,12 @@ public class NexialInstaller {
 
     public static void main(String[] args) {
         try {
-            props = loadProps();
-
             if (args != null && args.length > 0) {
-                handleCommand(args[0], args.length > 1 ? args[1] : null);
+                if (args.length == 1 && StringUtils.equals(args[0], "-help")) {
+                    showHelp();
+                } else {
+                    handleCommand(CommandLineOptions.newInstance(args));
+                }
                 exit(exitCode);
             } else {
                 showMenu();
@@ -88,19 +107,40 @@ public class NexialInstaller {
         }
     }
 
-    protected static Properties loadProps() throws IOException {
+    protected static Properties initProps() {
         InputStream propResource = NexialInstaller.class.getResourceAsStream(INSTALLER_PROPS);
-        Properties props = new Properties();
-        props.load(propResource);
-        return props;
+        try {
+            Properties props = new Properties();
+            props.load(propResource);
+            return props;
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to load " + INSTALLER_PROPS);
+        }
     }
 
-    protected static void showMenu() throws IOException {
+    protected static String readStdin() { return new Scanner(System.in).nextLine(); }
+
+    protected static void showHelp() {
+        showBanner();
+        System.out.println("USAGE: [ -install [version] -target [path] -backup [path] [-keepDownloaded] ]");
+        System.out.println("\t-install [latest|version]");
+        System.out.println("\t-target  [full path of where to install Nexial]");
+        System.out.println("\t-backup  [full path of where to backup existing Nexial]\n" +
+                           "\t         Omit means no backup");
+        System.out.println("\t-keepDownloaded indicates that the downloaded distro (zip) should be\n" +
+                           "\t         kept in Nexial home");
+        System.out.println("NO PARAMETER: interactive installation menu.");
+        System.out.println();
+        System.out.println();
+    }
+
+    protected static void showMenu() {
         showBanner();
         showOptions();
 
-        Scanner in = new Scanner(System.in);
-        String input = in.nextLine();
+        // Scanner in = new Scanner(System.in);
+        // String input = in.nextLine();
+        String input = readStdin();
 
         while (input != null && !input.equals(OPT_QUIT)) {
             input = input.trim();
@@ -110,27 +150,83 @@ public class NexialInstaller {
                 int splitIndex = input.indexOf(" ");
                 String command = splitIndex == -1 ? input : input.substring(0, splitIndex);
                 String version = splitIndex == -1 ? null : input.substring(splitIndex + 1);
-                handleCommand(command, version);
+
+                try {
+                    handleCommand(command, version);
+                } catch (Exception e) {
+                    showError(e.getMessage());
+                }
             }
 
             System.out.println();
             showOptions();
-            input = in.nextLine();
+
+            input = readStdin();
         }
     }
 
     protected static void showBanner() {
+        String edition = props.getProperty(PROP_EDITION);
+        if (StringUtils.isBlank(edition)) {
+            edition = "";
+        } else {
+            edition = " (" + edition + " edition)";
+        }
         System.out.println(repeatLine("-", LINE_WIDTH));
-        System.out.println(padCenter("[", APP + " " + VERSION, "]", LINE_WIDTH));
+        System.out.println(padCenter("[", APP + " " + VERSION + edition, "]", LINE_WIDTH));
         System.out.println(repeatLine("-", LINE_WIDTH));
     }
 
     protected static void showOptions() {
         System.out.println("OPTIONS:");
-        System.out.println("\t" + OPT_LIST + "\t- list the Nexial versions currently available for download.");
-        System.out.println("\t" + OPT_INSTALL + "\t- install the specified version or latest.");
-        System.out.println("\t" + OPT_QUIT + "\t- exit.");
+        System.out.println("\t" + OPT_LIST + "\t\t- list the Nexial versions currently available for download.");
+        System.out.println("\t" + OPT_INSTALL + "\t\t- install a specific version or latest.");
+        System.out.println("\t" + OPT_CONFIGURE + "\t- customize installation location.");
+        System.out.println("\t" + OPT_QUIT + "\t\t- exit.");
         System.out.print("COMMAND: ");
+    }
+
+    protected static void handleCommand(CommandLineOptions cmdlineOptions) throws IOException {
+        if (cmdlineOptions == null) {
+            error("Missing or wrong command line arguments. Please double check and try again.");
+            exitCode = ERR_ARGS_MISSING;
+            return;
+        }
+
+        if (StringUtils.isBlank(cmdlineOptions.getVersion())) {
+            error("No version specified.");
+            exitCode = ERR_MISSING_VERSION;
+            return;
+        }
+
+        if (cmdlineOptions.getInstallTarget() != null) {
+            File target = new File(cmdlineOptions.getInstallTarget());
+            if ((!target.exists() || !target.isDirectory()) && !target.mkdirs()) {
+                error("Unable to create directory " + cmdlineOptions.getInstallTarget() + ". " +
+                      "Please make sure you have permission to create this directory and try again.");
+                exitCode = ERR_FAIL_CREATE_DIR;
+                return;
+            } else {
+                installTarget = target;
+            }
+        }
+
+        if (cmdlineOptions.getBackupTarget() != null) {
+            File backup = new File(cmdlineOptions.getBackupTarget());
+            if (!backup.mkdirs()) {
+                error("Unable to create directory " + cmdlineOptions.getBackupTarget() + ". " +
+                      "Please make sure you have permission to create this directory and try again.");
+                exitCode = ERR_FAIL_CREATE_DIR;
+                return;
+            } else {
+                backupTarget = backup;
+            }
+        } else {
+            backupTarget = null;
+        }
+
+        keepDownloaded = cmdlineOptions.isKeepDownloaded();
+        install(cmdlineOptions.getVersion());
     }
 
     protected static void handleCommand(String command, String version) throws IOException {
@@ -140,9 +236,18 @@ public class NexialInstaller {
             return;
         }
 
+        if (OPT_CONFIGURE.equals(command)) {
+            configure();
+            exitCode = 0;
+            return;
+        }
+
         if (OPT_INSTALL.equals(command)) {
             if (StringUtils.isBlank(version)) {
                 showError("Please specify either latest or a specific version to install");
+                System.err.println("For example:");
+                System.err.println("\tinstall latest");
+                System.err.println("\tinstall nexial-core-v1.9_0400");
                 exitCode = ERR_MISSING_VERSION;
                 return;
             }
@@ -157,36 +262,97 @@ public class NexialInstaller {
         }
     }
 
+    protected static void configure() {
+        System.out.println();
+        System.out.println("press ENTER to accept current configurations.");
+
+        installTarget = configureDirectory("installation", installTarget);
+        backupTarget = configureDirectory("backup", backupTarget);
+        keepDownloaded = configureKeepDownloaded(keepDownloaded);
+    }
+
+    protected static boolean configureKeepDownloaded(boolean keepDownloaded) {
+        System.out.print("keep downloaded Nexial distro? (" + BooleanUtils.toStringYesNo(keepDownloaded) + "): ");
+
+        String input = readStdin();
+        while (StringUtils.isNotEmpty(input)) {
+            Boolean response = BooleanUtils.toBooleanObject(input);
+            if (response != null) {
+                keepDownloaded = response;
+                break;
+            }
+
+            System.out.print("keep downloaded Nexial distro? (" + BooleanUtils.toStringYesNo(keepDownloaded) + "): ");
+            input = readStdin();
+        }
+
+        System.out.println("keep downloaded Nexial distro? " + BooleanUtils.toStringYesNo(keepDownloaded));
+        if (keepDownloaded) { System.out.println("downloaded Nexial distro will be kept in " + installTarget); }
+        return keepDownloaded;
+    }
+
+    protected static File configureDirectory(String type, File target) {
+        System.out.print(type + " directory (" + target + "): ");
+
+        String input = readStdin();
+        while (StringUtils.isNotEmpty(input)) {
+            File newDir = verifyDirectory(input);
+            if (newDir == null) {
+                System.out.print(type + " directory (" + target + "): ");
+                input = readStdin();
+            } else {
+                target = newDir;
+                break;
+            }
+        }
+
+        System.out.println(type + " directory: " + target);
+        System.out.println();
+        return target;
+    }
+
+    protected static File verifyDirectory(String directory) {
+        if (StringUtils.isBlank(directory)) { return null; }
+
+        File dir = new File(directory);
+
+        // could it be a directory?
+        if (!dir.exists()) {
+            System.out.print("Directory " + directory + " does not exist. Create it? (yes/no) ");
+            String input = readStdin();
+            if (StringUtils.isBlank(input)) { return null; }
+            Boolean create = BooleanUtils.toBooleanObject(input);
+            if (create == null || !create) { return null; }
+
+            if (dir.mkdirs()) { return dir; }
+
+            System.err.println("Unable to create directory " + directory + ". " +
+                               "Please make sure you have permission to create this directory and try again.");
+            return null;
+        }
+
+        if (!dir.canRead()) {
+            System.err.println("Unable to read from " + directory + ". Please make sure you have permission to read " +
+                               "from this location and try again.");
+            return null;
+        }
+
+        // is a directory?
+        if (dir.isDirectory()) { return dir; }
+
+        // is a file?
+        System.err.println(directory + " is a file, not a directory. Please specify a valid directory instead.");
+        return null;
+    }
+
     protected static void showVersions() throws IOException {
-        if (MapUtils.isEmpty(availableVersions)) { availableVersions = listAvailableVersions(); }
+        if (availableVersions == null || availableVersions.size() < 1) { availableVersions = listAvailableVersions(); }
         availableVersions.keySet().forEach(System.out::println);
     }
 
-    // protected static List<String> listAvailableVersions() throws IOException {
-    //     JsonArray assets = downloadAvailableVersions();
-    //
-    //     List<String> versions = new ArrayList<>();
-    //     for (int i = 0; i < assets.size(); i++) {
-    //         JsonObject asset = assets.get(i).getAsJsonObject();
-    //         versions.add(asset.get("tag_name").getAsString());
-    //     }
-    //     return versions;
-    // }
-
-    // protected static JsonArray downloadAvailableVersions() throws IOException {
-    //     JsonElement response = HttpUtils.getJson(props.getProperty("nexial.versions.url"));
-    //     if (response == null || !response.isJsonArray()) {
-    //         throw new RuntimeException("Expected JSON format not found via ${nexial.versions.url}");
-    //     }
-    //
-    //     JsonArray assets = (JsonArray) response;
-    //     if (assets.size() < 1) { throw new RuntimeException("Expected JSON found empty via ${nexial.versions.url}"); }
-    //     return assets;
-    // }
-
     protected static Map<String, String> listAvailableVersions() throws IOException {
-        String versionUrl = props.getProperty("nexial.versions.url");
-        if (StringUtils.isBlank(versionUrl)) { throw new IOException("${nexial.versions.url} not configured!"); }
+        String versionUrl = props.getProperty(PROP_VERSIONS_URL);
+        if (StringUtils.isBlank(versionUrl)) { throw new IOException("${" + PROP_VERSIONS_URL + "} not configured!"); }
 
         Map<String, String> versions = new TreeMap<>(Comparator.reverseOrder());
 
@@ -194,7 +360,7 @@ public class NexialInstaller {
             // html treatment
             String html = HttpUtils.getText(versionUrl);
             if (StringUtils.isBlank(html)) {
-                throw new RuntimeException("Expected HTML content not found via ${nexial.version.url}");
+                throw new RuntimeException("Expected HTML content not found via ${" + PROP_VERSIONS_URL + "}");
             }
 
             String downloadUrlBase = StringUtils.substringBeforeLast(versionUrl, "/");
@@ -211,12 +377,12 @@ public class NexialInstaller {
             // github json
             JsonElement response = HttpUtils.getJson(versionUrl);
             if (response == null || !response.isJsonArray()) {
-                throw new RuntimeException("Expected JSON content not found via ${nexial.versions.url}");
+                throw new RuntimeException("Expected JSON content not found via ${" + PROP_VERSIONS_URL + "}");
             }
 
             JsonArray assets = (JsonArray) response;
             if (assets.size() < 1) {
-                throw new RuntimeException("Expected JSON structure not found via ${nexial.versions.url}");
+                throw new RuntimeException("Expected JSON structure not found via ${" + PROP_VERSIONS_URL + "}");
             }
 
             for (int i = 0; i < assets.size(); i++) {
@@ -239,7 +405,7 @@ public class NexialInstaller {
     }
 
     protected static String resolveDownloadUrl(String version) throws IOException {
-        if (MapUtils.isEmpty(availableVersions)) { availableVersions = listAvailableVersions(); }
+        if (availableVersions == null || availableVersions.size() < 1) { availableVersions = listAvailableVersions(); }
         if (availableVersions.containsKey(version)) { return availableVersions.get(version); }
         throw new IOException("Unable to resolve download URL for version " + version);
     }
@@ -252,9 +418,9 @@ public class NexialInstaller {
             return;
         }
 
-        if (MapUtils.isEmpty(availableVersions)) {
+        if (availableVersions == null || availableVersions.size() < 1) {
             availableVersions = listAvailableVersions();
-            if (MapUtils.isEmpty(availableVersions)) {
+            if (availableVersions == null || availableVersions.size() < 1) {
                 error("No versions available for Nexial");
                 return;
             }
@@ -262,7 +428,7 @@ public class NexialInstaller {
 
         version = version.trim();
         if (VER_LATEST.equals(version)) {
-            version = IterableUtils.get(availableVersions.keySet(), 0);
+            version = availableVersions.keySet().iterator().next();
         } else {
             if (!availableVersions.containsKey(version)) {
                 error("Specified version not found or not available");
@@ -291,24 +457,28 @@ public class NexialInstaller {
             return;
         }
 
-        File installTarget = resolveNexialHome();
         if (installTarget == null) { throw new IOException("unable to resolve Nexial installation directory"); }
         log("resolved Nexial installation directory as " + installTarget);
-
-        File backupTarget = resolveNexialHomeBackup();
-        if (backupTarget == null) { throw new IOException("unable to resolve Nexial backup directory"); }
-        log("resolved Nexial backup directory as " + backupTarget);
-
-        // remove BACKUP directory
-        log("clean up previous backup directory (if exists)...");
-        FileUtils.deleteDirectory(backupTarget);
-
         if (!installTarget.exists()) {
             log("Nexial installation directory not found; creating...");
             if (!installTarget.mkdirs()) { throw new IOException("unable to create Nexial installation directory"); }
-        } else {
+        }
+
+        // if (backupTarget == null) { throw new IOException("unable to resolve Nexial backup directory"); }
+        if (backupTarget != null) {
+            log("resolved Nexial backup directory as " + backupTarget);
+
+            // remove BACKUP directory
+            log("clean up previous backup directory (if exists)...");
+            FileUtils.deleteDirectory(backupTarget);
+
             log("backing up current Nexial installation...");
             FileUtils.moveDirectory(installTarget, backupTarget);
+            if (!installTarget.mkdirs()) { throw new IOException("unable to recreate Nexial installation directory"); }
+        } else {
+            // need to remove current install directory before we can unzip into it
+            log("delete Nexial installation directory");
+            FileUtils.deleteDirectory(installTarget);
             if (!installTarget.mkdirs()) { throw new IOException("unable to recreate Nexial installation directory"); }
         }
 
@@ -321,11 +491,16 @@ public class NexialInstaller {
         createFingerprint(version, installTarget);
 
         // remove distro
-        log("remove Nexial distro (zip)...");
-        FileUtils.deleteQuietly(downloaded);
+        if (!keepDownloaded) {
+            log("remove Nexial distro (zip)...");
+            FileUtils.deleteQuietly(downloaded);
+        } else {
+            log("preserve Nexial distro (zip) to " + installTarget);
+            FileUtils.moveFileToDirectory(downloaded, installTarget, false);
+        }
 
         // spot check
-        log("spot check...");
+        log("spot checks...");
         spotChecks(installTarget);
 
         log("installation for " + version + " completed");
@@ -355,12 +530,12 @@ public class NexialInstaller {
 
     protected static void spotChecks(File installTarget) {
         SPOT_CHECK_LIST.forEach(file -> {
-            String lookfor = installTarget.getAbsolutePath() + separator + file;
+            String startsWith = installTarget.getAbsolutePath() + separator + file;
             Collection<File> matches = FileUtils.listFiles(
                 installTarget,
                 new IOFileFilter() {
                     @Override
-                    public boolean accept(File file) { return file.getAbsolutePath().startsWith(lookfor); }
+                    public boolean accept(File file) { return file.getAbsolutePath().startsWith(startsWith); }
 
                     @Override
                     public boolean accept(File dir, String name) { return true;}
@@ -369,7 +544,7 @@ public class NexialInstaller {
                     @Override
                     public boolean accept(File file) { return true; }
                 });
-            if (CollectionUtils.isNotEmpty(matches)) { log("verified: " + IterableUtils.get(matches, 0)); }
+            if (matches.size() > 0) { log("verified: " + matches.iterator().next()); }
         });
     }
 
@@ -390,5 +565,4 @@ public class NexialInstaller {
     }
 
     protected static void exit(int returnCode) { System.exit(returnCode); }
-
 }

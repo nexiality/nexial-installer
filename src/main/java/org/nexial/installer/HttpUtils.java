@@ -18,6 +18,7 @@ package org.nexial.installer;
 
 import java.io.*;
 import java.net.URL;
+import java.net.UnknownHostException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -38,17 +39,27 @@ public final class HttpUtils {
             } else {
                 return GSON.fromJson(jsonText, JsonObject.class);
             }
+        } catch (UnknownHostException e) {
+            throw toIOException(e);
         }
     }
 
     protected static String getText(String url) throws IOException {
-        try (InputStream is = new URL(url).openStream()) { return readText(new BufferedInputStream(is)); }
+        try (InputStream is = new URL(url).openStream()) {
+            return readText(new BufferedInputStream(is));
+        } catch (UnknownHostException e) {
+            throw toIOException(e);
+        }
     }
 
     protected static SaveFile saveTo(String url, File targetFile, String progress) throws IOException {
         try (InputStream is = new URL(url).openStream()) {
             return save(new BufferedInputStream(is), targetFile, progress);
         }
+    }
+
+    private static IOException toIOException(UnknownHostException e) {
+        return new IOException("Host not found: " + e.getMessage() + ". Check your Internet connection and try again");
     }
 
     private static String readText(Reader rd) throws IOException {

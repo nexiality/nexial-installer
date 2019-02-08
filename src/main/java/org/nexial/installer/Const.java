@@ -31,8 +31,10 @@ final class Const {
 
     protected static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     protected static final DateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+    protected static final Charset UTF8 = Charset.forName("UTF-8");
 
     protected static final String INSTALLER_PROPS = "/" + NexialInstaller.class.getSimpleName() + ".properties";
+    protected static final String DOWNLOAD_DIR = System.getProperty("java.io.tmpdir") + separator;
     protected static final String PROJECT_BASE = "projects";
     protected static final String PROJECT_BASE_WIN = "C:" + separator + PROJECT_BASE + separator;
     protected static final String PROJECT_BASE_NIX = System.getProperty("user.home") + separator +
@@ -45,12 +47,15 @@ final class Const {
                                                                         "bin" + separator + "nexial.sh",
                                                                         "lib" + separator + "nexial-seeknow",
                                                                         "lib" + separator + "nexial-core",
+                                                                        "lib" + separator + "setup",
                                                                         "template" + separator + "nexial-data.xlsx",
                                                                         "template" + separator + "nexial-script.xlsx");
 
-    protected static final Charset UTF8 = Charset.forName("UTF-8");
     protected static final String APP = "Nexial Installer";
     protected static final String VERSION = "v1.4";
+
+    protected static final String PROP_VERSIONS_URL = "nexial.versions.url";
+    protected static final String PROP_EDITION = "installer.edition";
 
     protected static final int LINE_WIDTH = 80;
     protected static final int BUFFER_SIZE = 8192;
@@ -60,6 +65,10 @@ final class Const {
 
     protected static final String OPT_LIST = "list";
     protected static final String OPT_INSTALL = "install";
+    protected static final String OPT_CONFIGURE = "configure";
+    protected static final String OPT_TARGET = "target";
+    protected static final String OPT_BACKUP = "backup";
+    protected static final String OPT_KEEP_DOWNLOADED = "keepDownloaded";
     protected static final String OPT_QUIT = "quit";
     protected static final String VER_LATEST = "latest";
 
@@ -67,6 +76,8 @@ final class Const {
     protected static final int ERR_UNKNOWN_EXCEPTION = -13;
     protected static final int ERR_DOWNLOAD_FAILED = -3;
     protected static final int ERR_DOWNLOAD_SAVE_FAILED = -4;
+    protected static final int ERR_ARGS_MISSING = -5;
+    protected static final int ERR_FAIL_CREATE_DIR = -6;
 
     protected enum PadOption {LEFT, RIGHT, CENTER}
 

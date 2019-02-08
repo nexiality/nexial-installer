@@ -23,12 +23,13 @@ function require-tool() {
 RC=0
 require-tool java
 
-INSTALLER_HOME=$(cd `dirname $0`; pwd -P)
+INSTALLER_HOME=$(cd `dirname $0`/..; pwd -P)
 
 # make sure processes related to Nexial are killed, before installation
 ${INSTALLER_HOME}/bin/killprocs.sh
 RC=$?
 if [[ ${RC} -ne 0 ]]; then exit ${RC} ; fi
+echo ""
 
 # run nexial-installer
 java -jar ${INSTALLER_HOME}/lib/nexial-installer-1.4.jar $*

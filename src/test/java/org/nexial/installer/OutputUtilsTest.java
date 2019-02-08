@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.nexial.installer.Const.PadOption.*;
+import static org.nexial.installer.OutputUtils.INSTANCE;
 
 public class OutputUtilsTest {
 
@@ -35,38 +36,38 @@ public class OutputUtilsTest {
 
     @Test
     public void pad() {
-        Assert.assertEquals(">        Testing 1 2 3       <", OutputUtils.pad("> ", "Testing 1 2 3", " <", 30, CENTER));
-        Assert.assertEquals(">                            <", OutputUtils.pad("> ", "   ", " <", 30, CENTER));
-        Assert.assertEquals(">   Testing 1 2 3  <", OutputUtils.pad("> ", "Testing 1 2 3", " <", 20, CENTER));
+        Assert.assertEquals(">        Testing 1 2 3       <", INSTANCE.pad("> ", "Testing 1 2 3", " <", 30, CENTER));
+        Assert.assertEquals(">                            <", INSTANCE.pad("> ", "   ", " <", 30, CENTER));
+        Assert.assertEquals(">   Testing 1 2 3  <", INSTANCE.pad("> ", "Testing 1 2 3", " <", 20, CENTER));
         Assert.assertEquals("> Testing 1 2 3. D <\n" +
                             "> o not be alarmed <",
-                            OutputUtils.pad("> ", "Testing 1 2 3. Do not be alarmed", " <", 20, CENTER));
+                            INSTANCE.pad("> ", "Testing 1 2 3. Do not be alarmed", " <", 20, CENTER));
         Assert.assertEquals("> Testing 1 2 3. D <\n" +
                             "> o not be alarmed <\n" +
                             "> . I repeat, do n <\n" +
                             "> ot be alarmed    <",
-                            OutputUtils.pad("> ",
-                                            "Testing 1 2 3. Do not be alarmed. I repeat, do not be alarmed",
-                                            " <",
-                                            20,
-                                            RIGHT));
+                            INSTANCE.pad("> ",
+                                         "Testing 1 2 3. Do not be alarmed. I repeat, do not be alarmed",
+                                         " <",
+                                         20,
+                                         RIGHT));
         Assert.assertEquals("> For the last tim <\n" +
                             "> e, stop freaking <\n" +
                             ">             out! <",
-                            OutputUtils.pad("> ",
-                                            "For the last time, stop freaking out!",
-                                            " <",
-                                            20,
-                                            LEFT));
+                            INSTANCE.pad("> ",
+                                         "For the last time, stop freaking out!",
+                                         " <",
+                                         20,
+                                         LEFT));
     }
 
     @Test
     public void repeatLine() {
         Assert.assertEquals("                                                                                ",
-                            OutputUtils.repeatLine(null, 0));
+                            INSTANCE.repeatLine(null, 0));
         Assert.assertEquals("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                            OutputUtils.repeatLine("x", 0));
-        Assert.assertEquals("xxxxx", OutputUtils.repeatLine("x", 5));
-        Assert.assertEquals("xyzxy", OutputUtils.repeatLine("xyz", 5));
+                            INSTANCE.repeatLine("x", 0));
+        Assert.assertEquals("xxxxx", INSTANCE.repeatLine("x", 5));
+        Assert.assertEquals("xyzxy", INSTANCE.repeatLine("xyz", 5));
     }
 }

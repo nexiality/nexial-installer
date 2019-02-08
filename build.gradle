@@ -15,19 +15,10 @@
  */
 
 buildscript {
-	ext.kotlin_version = '1.3.20'
 	repositories {
 		mavenLocal()
 		mavenCentral()
 	}
-
-	dependencies {
-		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-	}
-}
-
-plugins {
-	id "org.jetbrains.kotlin.jvm" version "1.3.20"
 }
 
 apply plugin: 'java'
@@ -62,12 +53,9 @@ sourceSets.main.compileClasspath += configurations.provided
 dependencies {
 	compile("com.google.code.gson:gson:${gsonVersion}")
 	compile("commons-io:commons-io:${commonsIoVersion}")
-	compile("org.apache.commons:commons-collections4:${commonsCollectionVersion}")
 	compile("org.apache.commons:commons-lang3:${commonsLangVersion}")
 
 	testCompile("junit:junit:${junitVersion}")
-	testCompile("org.jetbrains.kotlin:kotlin-test")
-	testCompile("org.jetbrains.kotlin:kotlin-test-junit")
 }
 
 jar {
@@ -111,20 +99,7 @@ distributions {
 			into('bin') {
 				from 'bin'
 			}
+			into '/'
 		}
-	}
-}
-
-compileKotlin {
-	kotlinOptions {
-		jvmTarget = componentJavaVersion
-		javaParameters = true
-	}
-}
-
-compileTestKotlin {
-	kotlinOptions {
-		jvmTarget = componentJavaVersion
-		javaParameters = true
 	}
 }
