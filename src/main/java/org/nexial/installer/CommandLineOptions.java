@@ -23,6 +23,7 @@ import java.util.StringJoiner;
 import static org.nexial.installer.Const.*;
 
 public class CommandLineOptions {
+    private boolean listOnly;
     private String version;
     private String installTarget;
     private String backupTarget;
@@ -39,6 +40,10 @@ public class CommandLineOptions {
         Iterator<String> argIterator = Arrays.stream(args).iterator();
         argIterator.forEachRemaining(option -> {
             switch (option) {
+                case "-" + OPT_LIST: {
+                    options.setListOnly(true);
+                    break;
+                }
                 case "-" + OPT_INSTALL: {
                     if (!argIterator.hasNext()) { throw new IllegalArgumentException("No version specified"); }
                     options.setVersion(argIterator.next());
@@ -82,6 +87,10 @@ public class CommandLineOptions {
     public boolean isKeepDownloaded() { return keepDownloaded;}
 
     public void setKeepDownloaded(boolean keepDownloaded) { this.keepDownloaded = keepDownloaded;}
+
+    public boolean isListOnly() { return listOnly;}
+
+    public void setListOnly(boolean listOnly) { this.listOnly = listOnly;}
 
     @Override
     public String toString() {

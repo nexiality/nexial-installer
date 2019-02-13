@@ -122,7 +122,8 @@ public class NexialInstaller {
 
     protected static void showHelp() {
         showBanner();
-        System.out.println("USAGE: [ -install [version] -target [path] -backup [path] [-keepDownloaded] ]");
+        System.out.println("USAGE: [ -list | [ -install [version] -target [path] -backup [path] [-keepDownloaded] ] ]");
+        System.out.println("\t-list    list available versions");
         System.out.println("\t-install [latest|version]");
         System.out.println("\t-target  [full path of where to install Nexial]");
         System.out.println("\t-backup  [full path of where to backup existing Nexial]\n" +
@@ -190,6 +191,11 @@ public class NexialInstaller {
         if (cmdlineOptions == null) {
             error("Missing or wrong command line arguments. Please double check and try again.");
             exitCode = ERR_ARGS_MISSING;
+            return;
+        }
+
+        if (cmdlineOptions.isListOnly()) {
+            listAvailableVersions().keySet().forEach(System.out::println);
             return;
         }
 
