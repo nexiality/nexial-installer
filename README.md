@@ -25,18 +25,13 @@ In a nutshell, the installer performs the following activities:
 
 
 ### Get Installer
-The latest version is 1.4. Click on the link below to get the installer.
-- [Nexial Installer v1.4](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.4/nexial-installer-1.4.zip)
+The latest version is 1.4.1. Click on the link below to get the installer.
+- [Nexial Installer v1.4](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.4.1/nexial-installer-1.4.1.zip)
 
-Note that 1.4 is drastically different than the previous versions. Release 1.3 (and prior) utilize batch files (Windows),
+Note that 1.4.* is drastically different than the previous versions. Release 1.3 (and prior) utilize batch files (Windows),
 shell scripts (*NIX/Mac) and a set of command line tools to perform the installation process. In order to support more
 features and to ease the ongoing maintenance, we have switch to using Java in Release 1.4. This switch gives us more
 consistency and stability across platforms, albeit a bigger distro as well. 
-
-If you like to continue using pre-1.4 installer (but why...), you can click on the appropriate link below:
-- [Linux installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.linux.zip)
-- [Mac installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.mac.zip)
-- [Windows installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.windows.zip)
 
 
 ### Usage
@@ -49,7 +44,7 @@ If you like to continue using pre-1.4 installer (but why...), you can click on t
    ~ OR ~
 4. Run the installer script. **Use this to install a specific version of Nexial.**
    - (Windows) From Windows Explorer, go to `C:\projects\nexial-installer`, double-click on `installer.cmd`.
-   - (MacOSX) From Finder, go to `~/projects/nexial-installer`, double-click on `installer.sh`.
+   - (MacOSX) From Finder, go to `~/projects/nexial-installer`, execute `installer.sh`.
    - (Linux) Open terminal, execute `cd ~/projects/nexial-installer; ./installer.sh`.
 
 
@@ -57,6 +52,12 @@ If you like to continue using pre-1.4 installer (but why...), you can click on t
 1. Installer only back up one previous version of Nexial. But one can use the `configure` option via the `installer` 
    script to customize a different location for backup (and thus retain multiple backups).
 2. Installer does not self-update. In case a new version of installer is available, manual upgrade is required.
+
+
+_NOT RECOMMENDED__ If you like to continue using pre-1.4 installer (but why...), you can click on the appropriate link below:
+- [Linux installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.linux.zip)
+- [Mac installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.mac.zip)
+- [Windows installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.windows.zip)
 
 
 ### Contribute
