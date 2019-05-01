@@ -1,5 +1,5 @@
 @echo off
-REM Nexial Installer. v1.4
+REM Nexial Installer
 
 setlocal
 set INSTALLER_HOME=%~dp0..

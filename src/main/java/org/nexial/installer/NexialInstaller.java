@@ -492,6 +492,11 @@ public class NexialInstaller {
         log("unzipping Nexial distro to installation directory...");
         unzip(downloaded, installTarget);
 
+        // fix exec permission
+        log("setting permission bits on batch files...");
+        FileUtils.listFiles(installTarget, new String[]{"sh", "bash", "bat", "cmd"}, true)
+                 .forEach(file -> file.setExecutable(true, false));
+
         // add fingerprint
         log("adding fingerprint file...");
         createFingerprint(version, installTarget);

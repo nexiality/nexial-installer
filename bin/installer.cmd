@@ -1,5 +1,5 @@
 @echo off
-REM Nexial Installer. v1.4
+REM Nexial Installer
 
 setlocal
 
@@ -15,7 +15,7 @@ set INSTALLER_HOME=%~dp0..
 	echo.
 
 :run-installer
-    java -jar %INSTALLER_HOME%\lib\nexial-installer-1.4.jar %*
+    java -jar %INSTALLER_HOME%\lib\nexial-installer-*.jar %*
 
 :all-done
     endlocal

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Nexial Installer. v1.4
+# Nexial Installer
 
 # --------------------------------------------------------------------------------
 # functions
@@ -32,4 +32,4 @@ if [[ ${RC} -ne 0 ]]; then exit ${RC} ; fi
 echo ""
 
 # run nexial-installer
-java -jar ${INSTALLER_HOME}/lib/nexial-installer-1.4.jar $*
+java -jar ${INSTALLER_HOME}/lib/nexial-installer-*.jar $*
