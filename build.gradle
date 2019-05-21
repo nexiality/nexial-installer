@@ -59,7 +59,8 @@ dependencies {
 }
 
 jar {
-	baseName = archivesBaseName
+	// fixed jar name to simplify batch file
+	archiveName = "${componentName}.jar"
 	manifest {
 		attributes "Implementation-Title": archivesBaseName,
 		           "Implementation-Version": version,

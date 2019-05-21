@@ -32,4 +32,4 @@ if [[ ${RC} -ne 0 ]]; then exit ${RC} ; fi
 echo ""
 
 # run nexial-installer
-java -jar ${INSTALLER_HOME}/lib/nexial-installer-*.jar $*
+java -jar ${INSTALLER_HOME}/lib/nexial-installer.jar $*

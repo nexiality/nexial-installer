@@ -15,7 +15,7 @@ set INSTALLER_HOME=%~dp0..
 	echo.
 
 :run-installer
-    java -jar %INSTALLER_HOME%\lib\nexial-installer-*.jar %*
+    java -jar %INSTALLER_HOME%\lib\nexial-installer.jar %*
 
 :all-done
     endlocal
