@@ -54,7 +54,8 @@ consistency and stability across platforms, albeit a bigger distro as well.
 2. Installer does not self-update. In case a new version of installer is available, manual upgrade is required.
 
 
-_NOT RECOMMENDED_ If you like to continue using pre-1.4 installer (but why...), you can click on the appropriate link below:
+_NOT RECOMMENDED_ 
+If you like to continue using pre-1.4 installer (but why...), you can click on the appropriate link below:
 - [Linux installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.linux.zip)
 - [Mac installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.mac.zip)
 - [Windows installer](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.3/nexial-installer.windows.zip)
