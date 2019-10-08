@@ -334,12 +334,14 @@ public class NexialInstaller {
 
             System.err.println("Unable to create directory " + directory + ". " +
                                "Please make sure you have permission to create this directory and try again.");
+            exitCode = ERR_FAIL_CREATE_DIR;
             return null;
         }
 
         if (!dir.canRead()) {
             System.err.println("Unable to read from " + directory + ". Please make sure you have permission to read " +
                                "from this location and try again.");
+            exitCode = ERR_UNKNOWN_EXCEPTION;
             return null;
         }
 
@@ -348,6 +350,7 @@ public class NexialInstaller {
 
         // is a file?
         System.err.println(directory + " is a file, not a directory. Please specify a valid directory instead.");
+        exitCode = ERR_UNKNOWN_EXCEPTION;
         return null;
     }
 
@@ -428,6 +431,7 @@ public class NexialInstaller {
             availableVersions = listAvailableVersions();
             if (availableVersions == null || availableVersions.size() < 1) {
                 error("No versions available for Nexial");
+                exitCode = ERR_DOWNLOAD_FAILED;
                 return;
             }
         }
@@ -438,6 +442,7 @@ public class NexialInstaller {
         } else {
             if (!availableVersions.containsKey(version)) {
                 error("Specified version not found or not available");
+                exitCode = ERR_MISSING_VERSION;
                 return;
             }
         }
