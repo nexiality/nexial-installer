@@ -143,10 +143,10 @@ public class NexialInstaller {
         // String input = in.nextLine();
         String input = readStdin();
 
-        while (input != null && !input.equals(OPT_QUIT)) {
+        while (input != null && !(OPT_QUIT.equals(input) || OPT_QUIT_Q.equals(input))) {
             input = input.trim();
             if (input.length() > 0) {
-                if (OPT_QUIT.equals(input)) { break; }
+                if (OPT_QUIT.equals(input) || OPT_QUIT_Q.equals(input)) { break; }
 
                 int splitIndex = input.indexOf(" ");
                 String command = splitIndex == -1 ? input : input.substring(0, splitIndex);
@@ -180,10 +180,10 @@ public class NexialInstaller {
 
     protected static void showOptions() {
         System.out.println("OPTIONS:");
-        System.out.println("\t" + OPT_LIST + "\t\t- list the Nexial versions currently available for download.");
-        System.out.println("\t" + OPT_INSTALL + "\t\t- install a specific version or latest.");
-        System.out.println("\t" + OPT_CONFIGURE + "\t- customize installation location.");
-        System.out.println("\t" + OPT_QUIT + "\t\t- exit.");
+        System.out.println("\t" + OPT_LIST + " (" + OPT_LIST_L + ")" + "\t- list the Nexial versions currently available for download.");
+        System.out.println("\t" + OPT_INSTALL + " (" + OPT_INSTALL_I + ")" + "\t- install a specific version or latest.");
+        System.out.println("\t" + OPT_CONFIGURE + " (" + OPT_CONFIGURE_C + ")" + "\t- customize installation location.");
+        System.out.println("\t" + OPT_QUIT + " (" + OPT_QUIT_Q + ")" + "\t- exit.");
         System.out.print("COMMAND: ");
     }
 
@@ -236,24 +236,24 @@ public class NexialInstaller {
     }
 
     protected static void handleCommand(String command, String version) throws IOException {
-        if (OPT_LIST.equals(command)) {
+        if (OPT_LIST.equals(command) || OPT_LIST_L.equals(command)) {
             showVersions();
             exitCode = 0;
             return;
         }
 
-        if (OPT_CONFIGURE.equals(command)) {
+        if (OPT_CONFIGURE.equals(command) || OPT_CONFIGURE_C.equals(command)) {
             configure();
             exitCode = 0;
             return;
         }
 
-        if (OPT_INSTALL.equals(command)) {
+        if (OPT_INSTALL.equals(command) || OPT_INSTALL_I.equals(command)) {
             if (StringUtils.isBlank(version)) {
                 showError("Please specify either latest or a specific version to install");
                 System.err.println("For example:");
-                System.err.println("\tinstall latest");
-                System.err.println("\tinstall nexial-core-v1.9_0400");
+                System.err.println("\t" + OPT_INSTALL + " latest or " + OPT_INSTALL_I + " latest");
+                System.err.println("\t" + OPT_INSTALL + " nexial-core-v1.9_0400 or " + OPT_INSTALL_I + " nexial-core-v1.9_0400");
                 exitCode = ERR_MISSING_VERSION;
                 return;
             }

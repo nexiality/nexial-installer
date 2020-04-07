@@ -70,6 +70,13 @@ final class Const {
     protected static final String OPT_BACKUP = "backup";
     protected static final String OPT_KEEP_DOWNLOADED = "keepDownloaded";
     protected static final String OPT_QUIT = "quit";
+    protected static final String OPT_LIST_L = "L";
+    protected static final String OPT_INSTALL_I = "I";
+    protected static final String OPT_CONFIGURE_C = "C";
+    protected static final String OPT_TARGET_T = "T";
+    protected static final String OPT_BACKUP_B = "B";
+    protected static final String OPT_KEEP_DOWNLOADED_KD = "KD";
+    protected static final String OPT_QUIT_Q = "Q";
     protected static final String VER_LATEST = "latest";
 
     protected static final int ERR_MISSING_VERSION = -2;
