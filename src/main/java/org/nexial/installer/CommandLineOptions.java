@@ -39,27 +39,32 @@ public class CommandLineOptions {
 
         Iterator<String> argIterator = Arrays.stream(args).iterator();
         argIterator.forEachRemaining(option -> {
-            switch (option) {
-                case "-" + OPT_LIST: {
+            switch ("-" + option) {
+                case OPT_LIST:
+                case OPT_LIST_L:{
                     options.setListOnly(true);
                     break;
                 }
-                case "-" + OPT_INSTALL: {
+                case OPT_INSTALL:
+                case OPT_INSTALL_I: {
                     if (!argIterator.hasNext()) { throw new IllegalArgumentException("No version specified"); }
                     options.setVersion(argIterator.next());
                     break;
                 }
-                case "-" + OPT_TARGET: {
+                case OPT_TARGET:
+                case OPT_TARGET_T: {
                     if (!argIterator.hasNext()) { throw new IllegalArgumentException("No target directory specified"); }
                     options.setInstallTarget(argIterator.next());
                     break;
                 }
-                case "-" + OPT_BACKUP: {
+                case OPT_BACKUP:
+                case OPT_BACKUP_B: {
                     if (!argIterator.hasNext()) { throw new IllegalArgumentException("No backup directory specified"); }
                     options.setBackupTarget(argIterator.next());
                     break;
                 }
-                case "-" + OPT_KEEP_DOWNLOADED: {
+                case OPT_KEEP_DOWNLOADED:
+                case OPT_KEEP_DOWNLOADED_KD: {
                     options.setKeepDownloaded(true);
                     break;
                 }
