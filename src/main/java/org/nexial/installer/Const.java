@@ -56,6 +56,7 @@ final class Const {
 
     protected static final String PROP_VERSIONS_URL = "nexial.versions.url";
     protected static final String PROP_EDITION = "installer.edition";
+    protected static final String NEXIAL_BANNER = "nexial.banner";
 
     protected static final int LINE_WIDTH = 80;
     protected static final int BUFFER_SIZE = 8192;

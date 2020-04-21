@@ -16,11 +16,9 @@
 
 package org.nexial.installer;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -167,6 +165,7 @@ public class NexialInstaller {
     }
 
     protected static void showBanner() {
+        showProductBanner();
         String edition = props.getProperty(PROP_EDITION);
         if (StringUtils.isBlank(edition)) {
             edition = "";
@@ -176,6 +175,13 @@ public class NexialInstaller {
         System.out.println(repeatLine("-", LINE_WIDTH));
         System.out.println(padCenter("[", APP + " " + VERSION + edition, "]", LINE_WIDTH));
         System.out.println(repeatLine("-", LINE_WIDTH));
+    }
+
+    private static void showProductBanner() {
+        try(InputStream in = Class.class.getResourceAsStream(props.getProperty(NEXIAL_BANNER));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in)); ){
+            System.out.println(reader.lines().collect(Collectors.joining("\n")));
+        } catch (IOException ignored){}
     }
 
     protected static void showOptions() {
