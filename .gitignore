@@ -30,3 +30,4 @@ gradle/wrapper/
 gradlew
 gradlew.bat
 out/
+build/
