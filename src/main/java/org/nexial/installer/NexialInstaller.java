@@ -28,6 +28,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,7 +46,7 @@ import static org.nexial.installer.OutputUtils.*;
  * <li>install specific version of Nexial</li>
  * <li>install latest version of Nexial</li>
  * </li>
- *
+ * <p>
  * another design consideration is to keep this project as small as possible in terms of footprint (meaning: no or
  * little 3rd party dependencies) so that it is easier to distribute and to maintain.
  */
@@ -73,7 +74,7 @@ public class NexialInstaller {
             public File resolveForMac(String base) { return resolveForLinux(base); }
         };
 
-    private static Properties props = initProps();
+    private static final Properties props = initProps();
     private static File installTarget = resolveNexialHome();
     private static File backupTarget = resolveNexialHomeBackup();
     private static boolean keepDownloaded;
@@ -365,50 +366,101 @@ public class NexialInstaller {
 
         Map<String, String> versions = new TreeMap<>(Comparator.reverseOrder());
 
-        if (StringUtils.contains(versionUrl, "amazonaws")) {
-            // html treatment
-            String html = HttpUtils.getText(versionUrl);
-            if (StringUtils.isBlank(html)) {
-                throw new RuntimeException("Expected HTML content not found via ${" + PROP_VERSIONS_URL + "}");
-            }
+        // github json
+        if (StringUtils.contains(versionUrl, "github.com")) { return handleGithubUrl(versionUrl, versions); }
 
-            String downloadUrlBase = StringUtils.substringBeforeLast(versionUrl, "/");
-            String[] lines = StringUtils.split(html, '\n');
-            Arrays.stream(lines).forEach(line -> {
-                if (line.matches(REGEX_A_HREF_TAG)) {
-                    String version = StringUtils.substringBefore(StringUtils.substringAfter(line, ">"), "</a>");
-                    String url = downloadUrlBase + "/" + version;
-                    version = StringUtils.substringBefore(version, ".zip");
-                    versions.put(version, url);
-                }
-            });
-        } else {
-            // github json
-            JsonElement response = HttpUtils.getJson(versionUrl);
-            if (response == null || !response.isJsonArray()) {
-                throw new RuntimeException("Expected JSON content not found via ${" + PROP_VERSIONS_URL + "}");
-            }
+        // support for JSON Lines (http://jsonlines.org/)
+        // useful for MinIO implementation
+        if (StringUtils.endsWith(versionUrl, ".jsonl")) { return handleJsonLines(versionUrl, versions); }
 
-            JsonArray assets = (JsonArray) response;
-            if (assets.size() < 1) {
-                throw new RuntimeException("Expected JSON structure not found via ${" + PROP_VERSIONS_URL + "}");
-            }
+        // default treatment
+        // html treatment
+        return handleHtmlUrl(versionUrl, versions);
+    }
 
-            for (int i = 0; i < assets.size(); i++) {
-                JsonObject release = assets.get(i).getAsJsonObject();
-                if (!release.has("tag_name") || !release.has("assets")) { continue; }
-
-                String version = release.get("tag_name").getAsString();
-
-                JsonArray thisAssets = release.get("assets").getAsJsonArray();
-                if (thisAssets == null || thisAssets.size() < 1) { continue; }
-
-                JsonObject firstAsset = thisAssets.get(0).getAsJsonObject();
-                if (!firstAsset.has("browser_download_url")) { continue; }
-
-                versions.put(version, firstAsset.get("browser_download_url").getAsString());
-            }
+    private static Map<String, String> handleGithubUrl(String versionUrl, Map<String, String> versions)
+        throws IOException {
+        JsonElement response = HttpUtils.getJson(versionUrl);
+        if (response == null || !response.isJsonArray()) {
+            throw new RuntimeException("Expected JSON content not found via ${" + PROP_VERSIONS_URL + "}");
         }
+
+        JsonArray assets = (JsonArray) response;
+        if (assets.size() < 1) {
+            throw new RuntimeException("Expected JSON structure not found via ${" + PROP_VERSIONS_URL + "}");
+        }
+
+        for (int i = 0; i < assets.size(); i++) {
+            JsonObject release = assets.get(i).getAsJsonObject();
+            if (!release.has("tag_name") || !release.has("assets")) { continue; }
+
+            String version = release.get("tag_name").getAsString();
+
+            JsonArray thisAssets = release.get("assets").getAsJsonArray();
+            if (thisAssets == null || thisAssets.size() < 1) { continue; }
+
+            JsonObject firstAsset = thisAssets.get(0).getAsJsonObject();
+            if (!firstAsset.has("browser_download_url")) { continue; }
+
+            versions.put(version, firstAsset.get("browser_download_url").getAsString());
+        }
+
+        return versions;
+    }
+
+    private static Map<String, String> handleHtmlUrl(String versionUrl, Map<String, String> versions)
+        throws IOException {
+        String html = HttpUtils.getText(versionUrl);
+        if (StringUtils.isBlank(html)) {
+            throw new RuntimeException("Expected HTML content not found via ${" + PROP_VERSIONS_URL + "}");
+        }
+
+        String downloadUrlBase = StringUtils.substringBeforeLast(versionUrl, "/");
+        String[] lines = StringUtils.split(html, '\n');
+        Arrays.stream(lines).forEach(line -> {
+            if (line.matches(REGEX_A_HREF_TAG)) {
+                String version = StringUtils.substringBefore(StringUtils.substringAfter(line, ">"), "</a>");
+                String url = downloadUrlBase + "/" + version;
+                version = StringUtils.substringBefore(version, ".zip");
+                versions.put(version, url);
+            }
+        });
+
+        return versions;
+    }
+
+    private static Map<String, String> handleJsonLines(String versionUrl, Map<String, String> versions)
+        throws IOException {
+        String jsonlContent = HttpUtils.getText(versionUrl);
+        if (StringUtils.isBlank(jsonlContent)) {
+            throw new RuntimeException("Expected JSON Lines content not found via ${" + PROP_VERSIONS_URL + "}");
+        }
+
+        String[] jsonLines = StringUtils.split(jsonlContent, "\n");
+        if (ArrayUtils.isEmpty(jsonLines)) {
+            throw new RuntimeException("No JSON Lines found via ${" + PROP_VERSIONS_URL + "}");
+        }
+
+        Arrays.stream(jsonLines).forEach(json -> {
+            JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+
+            String distroName = null;
+            if (jsonObject.has("key")) {
+                String key = jsonObject.get("key").getAsString();
+                if (StringUtils.endsWith(key, ".zip")) { distroName = key; }
+            }
+
+            String distroBaseUrl = null;
+            if (jsonObject.has("url")) {
+                String url = jsonObject.get("url").getAsString();
+                if (StringUtils.isNotBlank(url)) { distroBaseUrl = url; }
+            }
+
+            if (StringUtils.isNotBlank(distroBaseUrl) && StringUtils.isNotBlank(distroName)) {
+                String distroUrl = distroBaseUrl + "/" + distroName;
+                versions.put(distroName, distroUrl);
+            }
+        });
 
         return versions;
     }

@@ -17,6 +17,7 @@
 package org.nexial.installer;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ final class Const {
 
     protected static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     protected static final DateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-    protected static final Charset UTF8 = Charset.forName("UTF-8");
+    protected static final Charset UTF8 = StandardCharsets.UTF_8;
 
     protected static final String INSTALLER_PROPS = "/" + NexialInstaller.class.getSimpleName() + ".properties";
     protected static final String DOWNLOAD_DIR = System.getProperty("java.io.tmpdir") + separator;
@@ -52,7 +53,7 @@ final class Const {
                                                                         "template" + separator + "nexial-script.xlsx");
 
     protected static final String APP = "Nexial Installer";
-    protected static final String VERSION = "v1.4";
+    protected static final String VERSION = "v1.4.4";
 
     protected static final String PROP_VERSIONS_URL = "nexial.versions.url";
     protected static final String PROP_EDITION = "installer.edition";
