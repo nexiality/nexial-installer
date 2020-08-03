@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.StringUtils;
+
 import static org.nexial.installer.Const.*;
 
 public class CommandLineOptions {
@@ -38,41 +40,40 @@ public class CommandLineOptions {
         CommandLineOptions options = new CommandLineOptions();
 
         Iterator<String> argIterator = Arrays.stream(args).iterator();
-        argIterator.forEachRemaining(option -> {
-            switch ("-" + option) {
-                case OPT_LIST:
-                case OPT_LIST_L:{
-                    options.setListOnly(true);
-                    break;
-                }
-                case OPT_INSTALL:
-                case OPT_INSTALL_I: {
-                    if (!argIterator.hasNext()) { throw new IllegalArgumentException("No version specified"); }
-                    options.setVersion(argIterator.next());
-                    break;
-                }
-                case OPT_TARGET:
-                case OPT_TARGET_T: {
-                    if (!argIterator.hasNext()) { throw new IllegalArgumentException("No target directory specified"); }
-                    options.setInstallTarget(argIterator.next());
-                    break;
-                }
-                case OPT_BACKUP:
-                case OPT_BACKUP_B: {
-                    if (!argIterator.hasNext()) { throw new IllegalArgumentException("No backup directory specified"); }
-                    options.setBackupTarget(argIterator.next());
-                    break;
-                }
-                case OPT_KEEP_DOWNLOADED:
-                case OPT_KEEP_DOWNLOADED_KD: {
-                    options.setKeepDownloaded(true);
-                    break;
-                }
-                default: {
-                    throw new IllegalArgumentException("Unknown commandline argument: " + option);
-                }
+        while (argIterator.hasNext()) {
+            String option = argIterator.next();
+            String opt = StringUtils.removeStart(option, "-");
+
+            if (OPT_LIST.equalsIgnoreCase(opt) || OPT_LIST_L.equalsIgnoreCase(opt)) {
+                options.setListOnly(true);
+                continue;
             }
-        });
+
+            if (OPT_INSTALL.equalsIgnoreCase(opt) || OPT_INSTALL_I.equalsIgnoreCase(opt)) {
+                if (!argIterator.hasNext()) { throw new IllegalArgumentException("No version specified"); }
+                options.setVersion(argIterator.next());
+                continue;
+            }
+
+            if (OPT_TARGET.equalsIgnoreCase(opt) || OPT_TARGET_T.equalsIgnoreCase(opt)) {
+                if (!argIterator.hasNext()) { throw new IllegalArgumentException("No target directory specified"); }
+                options.setInstallTarget(argIterator.next());
+                continue;
+            }
+
+            if (OPT_BACKUP.equalsIgnoreCase(opt) || OPT_BACKUP_B.equalsIgnoreCase(opt)) {
+                if (!argIterator.hasNext()) { throw new IllegalArgumentException("No backup directory specified"); }
+                options.setBackupTarget(argIterator.next());
+                continue;
+            }
+
+            if (OPT_KEEP_DOWNLOADED.equalsIgnoreCase(opt) || OPT_KEEP_DOWNLOADED_KD.equalsIgnoreCase(opt)) {
+                options.setKeepDownloaded(true);
+                continue;
+            }
+
+            throw new IllegalArgumentException("Unknown commandline argument: " + option);
+        }
 
         return options;
     }

@@ -144,10 +144,10 @@ public class NexialInstaller {
         // String input = in.nextLine();
         String input = readStdin();
 
-        while (input != null && !(OPT_QUIT.equals(input) || OPT_QUIT_Q.equals(input))) {
+        while (input != null && !(OPT_QUIT.equalsIgnoreCase(input) || OPT_QUIT_Q.equalsIgnoreCase(input))) {
             input = input.trim();
             if (input.length() > 0) {
-                if (OPT_QUIT.equals(input) || OPT_QUIT_Q.equals(input)) { break; }
+                if (OPT_QUIT.equalsIgnoreCase(input) || OPT_QUIT_Q.equalsIgnoreCase(input)) { break; }
 
                 int splitIndex = input.indexOf(" ");
                 String command = splitIndex == -1 ? input : input.substring(0, splitIndex);
@@ -237,19 +237,19 @@ public class NexialInstaller {
     }
 
     protected static void handleCommand(String command, String version) throws IOException {
-        if (OPT_LIST.equals(command) || OPT_LIST_L.equals(command)) {
+        if (OPT_LIST.equalsIgnoreCase(command) || OPT_LIST_L.equalsIgnoreCase(command)) {
             showVersions();
             exitCode = 0;
             return;
         }
 
-        if (OPT_CONFIGURE.equals(command) || OPT_CONFIGURE_C.equals(command)) {
+        if (OPT_CONFIGURE.equalsIgnoreCase(command) || OPT_CONFIGURE_C.equalsIgnoreCase(command)) {
             configure();
             exitCode = 0;
             return;
         }
 
-        if (OPT_INSTALL.equals(command) || OPT_INSTALL_I.equals(command)) {
+        if (OPT_INSTALL.equalsIgnoreCase(command) || OPT_INSTALL_I.equalsIgnoreCase(command)) {
             if (StringUtils.isBlank(version)) {
                 showError("Please specify either latest or a specific version to install");
                 System.err.println("For example:");
