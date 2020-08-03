@@ -457,7 +457,7 @@ public class NexialInstaller {
             }
 
             if (StringUtils.isNotBlank(distroBaseUrl) && StringUtils.isNotBlank(distroName)) {
-                String distroUrl = distroBaseUrl + "/" + distroName;
+                String distroUrl = distroBaseUrl + distroName;
                 versions.put(distroName, distroUrl);
             }
         });
