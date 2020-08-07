@@ -5,6 +5,7 @@ if [[ "$1" != "" ]]; then
     cp .${1}/NexialInstaller.properties src/main/resources/NexialInstaller.properties
 fi
 
+chmod -fR 755 bin/*.sh
 gradle distZip installDist
 
 if [[ "$1" != "" ]]; then
