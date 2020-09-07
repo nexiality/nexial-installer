@@ -70,6 +70,8 @@ final class Const {
     protected static final String OPT_TARGET = "target";
     protected static final String OPT_BACKUP = "backup";
     protected static final String OPT_KEEP_DOWNLOADED = "keepDownloaded";
+    protected static final String OPT_SILENT_UPDATE = "silentUpdate";
+    protected static final String OPT_UPGRADE_NEXIAL = "upgradeNexial";
     protected static final String OPT_QUIT = "quit";
     protected static final String OPT_LIST_L = "L";
     protected static final String OPT_INSTALL_I = "I";
@@ -77,6 +79,8 @@ final class Const {
     protected static final String OPT_TARGET_T = "T";
     protected static final String OPT_BACKUP_B = "B";
     protected static final String OPT_KEEP_DOWNLOADED_KD = "KD";
+    protected static final String OPT_SILENT_UPDATE_SU = "SU";
+    protected static final String OPT_UPGRADE_NEXIAL_UN = "UN";
     protected static final String OPT_QUIT_Q = "Q";
     protected static final String VER_LATEST = "latest";
 
@@ -86,6 +90,7 @@ final class Const {
     protected static final int ERR_DOWNLOAD_SAVE_FAILED = -4;
     protected static final int ERR_ARGS_MISSING = -5;
     protected static final int ERR_FAIL_CREATE_DIR = -6;
+    protected static final int ERR_DUP_PROCESS = -8;
 
     protected enum PadOption {LEFT, RIGHT, CENTER}
 

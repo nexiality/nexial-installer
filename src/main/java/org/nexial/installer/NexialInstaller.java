@@ -20,7 +20,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileLock;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -37,8 +49,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import static java.io.File.separator;
+import static java.nio.channels.FileChannel.open;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.commons.lang3.SystemUtils.USER_HOME;
 import static org.nexial.installer.Const.*;
 import static org.nexial.installer.OutputUtils.*;
+import static org.nexial.installer.RuntimeUtils.terminateInstance;
 
 /**
  * this cmdline tool has 3 options:<li>
@@ -79,6 +96,10 @@ public class NexialInstaller {
     private static File backupTarget = resolveNexialHomeBackup();
     private static boolean keepDownloaded;
 
+    static final String NEXIAL_DIR = resolveNexialDirPath();
+    static final String NEXIAL_INSTALL_DIR = StringUtils.appendIfMissing(NEXIAL_DIR, separator) + "install" + separator;
+    static final Path updateStatusFilePath = Paths.get(NEXIAL_INSTALL_DIR + "update.nx" );
+
     private static int exitCode;
     private static Map<String, String> availableVersions = new TreeMap<>();
 
@@ -88,6 +109,20 @@ public class NexialInstaller {
         File resolveForLinux(String base);
 
         File resolveForMac(String base);
+    }
+
+    protected static void createInstallDirIfNotExist(){
+        if(!Files.isDirectory(Paths.get(NEXIAL_INSTALL_DIR))) {
+            try {
+                Files.createDirectory(Paths.get(NEXIAL_INSTALL_DIR));
+            } catch (IOException e) {
+                error(String.format("Could not create %s directory", NEXIAL_INSTALL_DIR));
+            }
+        }
+    }
+
+    static {
+        createInstallDirIfNotExist();
     }
 
     public static void main(String[] args) {
@@ -200,6 +235,16 @@ public class NexialInstaller {
             return;
         }
 
+        if (cmdlineOptions.isSilentUpdate()) {
+            checkForUpdates();
+            return;
+        }
+
+        if (cmdlineOptions.isUpgrade()) {
+            upgradeNexial();
+            return;
+        }
+
         if (StringUtils.isBlank(cmdlineOptions.getVersion())) {
             error("No version specified.");
             exitCode = ERR_MISSING_VERSION;
@@ -245,6 +290,18 @@ public class NexialInstaller {
 
         if (OPT_CONFIGURE.equalsIgnoreCase(command) || OPT_CONFIGURE_C.equalsIgnoreCase(command)) {
             configure();
+            exitCode = 0;
+            return;
+        }
+
+        if (OPT_SILENT_UPDATE.equalsIgnoreCase(command) || OPT_SILENT_UPDATE_SU.equalsIgnoreCase(command)) {
+            checkForUpdates();
+            exitCode = 0;
+            return;
+        }
+
+        if (OPT_UPGRADE_NEXIAL.equalsIgnoreCase(command) || OPT_UPGRADE_NEXIAL_UN.equalsIgnoreCase(command)) {
+            upgradeNexial();
             exitCode = 0;
             return;
         }
@@ -377,6 +434,289 @@ public class NexialInstaller {
         // html treatment
         return handleHtmlUrl(versionUrl, versions);
     }
+
+    protected static void checkForUpdates() {
+
+        checkDuplicateProcess();
+
+        String currentVersion = getCurrentVersionOfNexial();
+
+        boolean isNetworkInstall = false;
+        Path updateCheckDir = null;
+        final Path installConfigPath = Paths.get(NEXIAL_INSTALL_DIR, "install.conf");
+        if(Files.exists(installConfigPath)){
+            final Map<String, String> configs = getUpdateStatusProperties(installConfigPath);
+
+            if(configs.containsKey("autoDownload")) {
+                if(!Boolean.parseBoolean(configs.get("autoUpdate"))){
+                    log("Auto-download for nexial-core is disabled.");
+                    return;
+                }
+            }
+
+            if(configs.containsKey("updateFromDir")) {
+                updateCheckDir = Paths.get(configs.get("updateFromDir"));
+                isNetworkInstall = true;
+            }
+
+        }
+
+        final Entry<String, String> latestVersionUrlMap = isNetworkInstall ? getLatestVersionMap(updateCheckDir)
+                                                                           : getLatestVersionMap();
+
+        final String latestVersion = latestVersionUrlMap.getKey();
+        log("Latest version of nexial is: " + latestVersion);
+
+        if(!isUpdateStatusOld(latestVersion) || isLatestVersionStaged(latestVersion)){
+            log("Aborting current check.");
+            return;
+        }
+
+        final int currentBuildNumber = getBuildNumberFromVersion.apply(currentVersion);
+        log("Current build number is: " + currentBuildNumber);
+
+        final int latestBuildNumber = getBuildNumberFromVersion.apply(latestVersion);
+        log("Latest build number is: " + latestBuildNumber);
+
+        if(latestBuildNumber > currentBuildNumber) {
+            log("New version of Nexial-Core is available for download & install.");
+
+            String status = "lastCheckedAt=" + System.currentTimeMillis() + "\n" +
+                            "currentVersionWas=" + currentVersion + "\n" +
+                            "latestVersionFound=" + latestVersion + "\n" +
+                            "currentBuildNumber=" + currentBuildNumber + "\n" +
+                            "latestBuildNumber=" + latestBuildNumber + "\n" +
+                            "isOnLatest=" + false + "\n" +
+                            "downloadUrl=" + latestVersionUrlMap.getValue() + "\n";
+
+            /* modify the installTarget to stage folder. */
+            final Path stageDirLocation = Paths.get( NEXIAL_INSTALL_DIR + separator + latestVersion);
+
+            try {
+                deleteOldStageDirs(stageDirLocation);
+            } catch (IOException e) {
+                error("Could not re-create staged installation directory. Reason: " + e.getMessage());
+                return;
+            }
+
+            installTarget =  stageDirLocation.toFile();
+            backupTarget = null;
+
+            try {
+
+                if(isNetworkInstall)
+                    FileUtils.copyDirectory(Paths.get(latestVersionUrlMap.getValue()).toFile(), installTarget);
+                else
+                    install(latestVersion);
+
+                backupTarget = resolveNexialHomeBackup();
+                log("resolved Nexial backup directory as " + backupTarget);
+
+                log("clean up previous backup directory (if exists)...");
+                if(backupTarget.exists())
+                    FileUtils.deleteQuietly(backupTarget);
+
+                Files.createDirectory(backupTarget.toPath());
+
+                log("backing up current Nexial installation (safe copy)...");
+                FileUtils.copyDirectory(resolveNexialHome(), backupTarget);
+                status += "updateLocation=" + installTarget + "\n"
+                          + "backupLocation=" + backupTarget + "\n"
+                          + "downloadFinishedAt=" + System.currentTimeMillis();
+
+                try {
+                    Files.write(updateStatusFilePath, status.getBytes());
+                } catch (IOException e) {
+                    error("Could not update the update.nx file. Reason: " + e.getMessage());
+                }
+            } catch (IOException e) {
+                error("Could not finish stage-installation of new nexial version. Reason: " + e.getMessage());
+            }
+        } else {
+            log("Current installation of Nexial-Core is already on latest build.");
+        }
+    }
+
+    protected static void upgradeNexial(){
+        checkDuplicateProcess();
+
+        Map<String, String> props = getUpdateStatusProperties(updateStatusFilePath);
+        String updateLocation = props.get("updateLocation");
+
+        if(Files.isDirectory(Paths.get(updateLocation))){
+            File currentNexial = resolveNexialHome();
+            FileUtils.deleteQuietly(currentNexial);
+            try {
+
+                final Path targetPath = currentNexial.toPath(); // target
+                final Path sourcePath = Paths.get(updateLocation); // source
+                    Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult preVisitDirectory(final Path dir,
+                                                                 final BasicFileAttributes attrs) throws IOException {
+                            Files.createDirectories(targetPath.resolve(sourcePath
+                                                                           .relativize(dir)));
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult visitFile(final Path file,
+                                                         final BasicFileAttributes attrs) throws IOException {
+                            Files.copy(file,
+                                       targetPath.resolve(sourcePath.relativize(file)));
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                FileUtils.deleteQuietly(sourcePath.toFile());
+                // FileUtils.moveDirectory(Paths.get(updateLocation).toFile(), currentNexial);
+                FileUtils.deleteQuietly(updateStatusFilePath.toFile());
+            } catch (IOException e) {
+                error("Failed to update the nexial-core. Stage update directory is not available.");
+            }
+            log("Nexial-Core Upgraded Successfully.");
+        } else {
+            error("Failed to update the nexial-core. Stage update directory is not available.");
+        }
+
+    }
+    /*
+
+    private static void runResumeScript(){
+        Path resumeScriptPath = Paths.get(NEXIAL_INSTALL_DIR, "resume.nx");
+        if(Files.exists(resumeScriptPath)){
+            try {
+                final String resumeCommand = new String(Files.readAllBytes(resumeScriptPath));
+                log("Calling command " + resumeCommand);
+                try {
+                    Runtime.getRuntime().exec(resumeCommand);
+                } catch (IOException e) {
+                    error("Could not restart nexial-core. Reason: " + e.getMessage());
+                }
+            } catch (IOException e) {
+                error("Resume script file is present but failed to read. Reason: " + e.getMessage());
+                log("Nexial will not start automatically.");
+            }
+        } else {
+            log("Resume script not found. Nexial will not start automatically.");
+        }
+    }
+    */
+
+    private static void deleteOldStageDirs(Path stageDirLocation) throws IOException {
+        Files.list(Paths.get( NEXIAL_DIR, "install"))
+             .map(Path::toFile)
+             .filter(File::isDirectory)
+             .filter(NexialInstaller::isStageDirectory)
+             .forEach(FileUtils::deleteQuietly);
+        Files.createDirectory(stageDirLocation);
+    }
+
+    private static boolean isStageDirectory(File file) {
+        return file.getName().matches("nexial-core-v[0-9]+.[0-9]+_[0-9]+");
+    }
+
+    private static boolean isUpdateStatusOld(String latestVersion) {
+        final long lastCheckTimeDiff = System.currentTimeMillis() - updateStatusFilePath.toFile().lastModified();
+
+        if(lastCheckTimeDiff > Duration.ofDays(7).toMillis()){
+            log("Last update checked was more than 7 days ago. Deleting the older update file.");
+            updateStatusFilePath.toFile().delete();
+            return true;
+        } else if(lastCheckTimeDiff < Duration.ofHours(6).toMillis()) {
+            log("Last update was checked within 6 hours.");
+        }
+        return false;
+    }
+
+    private static boolean isLatestVersionStaged(String latestVersion){
+        final Map<String, String> updateProps = getUpdateStatusProperties(updateStatusFilePath);
+        if(latestVersion.equalsIgnoreCase(updateProps.get("latestVersionFound"))) {
+            if(Files.exists(Paths.get(updateProps.get("updateLocation")))) {
+                log("Latest version is already staged and ready for installation.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Map<String, String> getUpdateStatusProperties(Path propertyFile) {
+        try {
+            return Files.readAllLines(propertyFile)
+                        .stream().map(l -> l.split("="))
+                        .collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        } catch (IOException e) {
+            error("Could not extract property map from file. Reason: " + e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    protected static String getCurrentVersionOfNexial(){
+        try {
+            String currentVersion = new String(Files.readAllBytes(Paths.get(installTarget.getAbsolutePath() + separator + FINGERPRINT)));
+            currentVersion = currentVersion.trim().replaceAll("\n", "");
+            log("Current version of nexial is: " + currentVersion);
+            return currentVersion;
+        } catch (IOException e) {
+            error("Could not extract currentVersion of nexial-core installed. Reason : " + e.getMessage());
+            exitCode = ERR_UNKNOWN_EXCEPTION;
+            exit(exitCode);
+            return null;
+        }
+    }
+
+    protected static Entry<String, String> getLatestVersionMap(){
+        try {
+            availableVersions = listAvailableVersions();
+            if(availableVersions.size() < 1) {
+                error("Available version list is not available.");
+                exitCode = ERR_DOWNLOAD_FAILED;
+                exit(exitCode);
+                return null;
+            }
+        } catch (IOException e) {
+            error("Could not fetch available version list. Reason: " + e.getMessage());
+            exitCode = ERR_DOWNLOAD_FAILED;
+            exit(exitCode);
+            return null;
+        }
+
+        return availableVersions.entrySet().stream().findFirst().get();
+    }
+
+    protected static Entry<String, String> getLatestVersionMap(Path dir){
+        try {
+            int latestBuild = Files.list(dir)
+                                   .map(Path::toFile)
+                                   .filter(File::isDirectory)
+                                   .filter(NexialInstaller::isStageDirectory)
+                                   .map(File::getName)
+                                   .mapToInt(getBuildNumberFromVersion::apply)
+                                   .max().orElse(0);
+            if(latestBuild > 0) {
+                Optional<File> latestNexialDir = Files.list(dir)
+                     .map(Path::toFile)
+                     .filter(NexialInstaller::isStageDirectory)
+                     .filter(f -> getBuildNumberFromVersion.apply(f.getName()) == latestBuild)
+                     .findFirst();
+                if(latestNexialDir.isPresent()){
+                    return new AbstractMap.SimpleEntry(latestNexialDir.get().getName(),
+                                                       latestNexialDir.get().getAbsolutePath());
+                } else {
+                    throw new IOException("No version present.");
+                }
+            } else {
+                throw new IOException("No version present.");
+            }
+        } catch (IOException e) {
+            error("Could not fetch available version list. Reason: " + e.getMessage());
+            exitCode = ERR_DOWNLOAD_FAILED;
+            exit(exitCode);
+            return null;
+        }
+    }
+
+    protected static final Function<String, Integer> getBuildNumberFromVersion =
+        (version) -> Integer.parseInt(version.split("-v")[1].split("_")[1]);
 
     private static Map<String, String> handleGithubUrl(String versionUrl, Map<String, String> versions)
         throws IOException {
@@ -514,6 +854,7 @@ public class NexialInstaller {
         log("downloaded Nexial distro in approximately " + (saveFile.getElapsedTime() / 1000) + " seconds");
 
         File downloaded = saveFile.getFile();
+
         if (!downloaded.canRead() || downloaded.length() != saveFile.getBytes()) {
             error("downloaded Nexial distro cannot be read or was not saved correctly");
             exitCode = ERR_DOWNLOAD_SAVE_FAILED;
@@ -630,6 +971,67 @@ public class NexialInstaller {
         if (os.startsWith("Linux") || os.startsWith("LINUX")) { return handler.resolveForLinux(base); }
         if (os.startsWith("Mac")) { return handler.resolveForMac(base); }
         throw new RuntimeException("Unknown OS: " + os);
+    }
+
+    private static String resolveNexialDirPath() {
+        return StringUtils.appendIfMissing(new File(USER_HOME).getAbsolutePath(), separator) + ".nexial";
+        // return resolveLocation("", NEXIAL_LOCATION_HANDLER).getParent() + separator + ".nexial";
+    }
+
+    private static void checkDuplicateProcess() {
+        final Path updateLock = Paths.get(NEXIAL_INSTALL_DIR + "update.lock");
+
+        final String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+        final long processId = Long.parseLong(processName.split("@")[0]);
+
+        log("Current Process ID: " + processId);
+
+        /* Check if any other instance running or not */
+        if(Files.notExists(updateLock)) {
+            try {
+                Files.createFile(updateLock);
+            } catch (IOException e) {
+                error("Could not create lock file. Reason: " + e.getMessage());
+            }
+        }
+        final File file = updateLock.toFile();
+        try {
+            FileLock lock = open(updateLock, CREATE, WRITE).tryLock(0, Long.MAX_VALUE, false);
+            if (lock == null) {
+                error("Unable to lock the file. Checking if last process became zombie or not...");
+                final long lastModifiedTimeDiff = System.currentTimeMillis() - file.lastModified();
+
+                if(lastModifiedTimeDiff > Duration.ofHours(8).toMillis()){
+                    log("Last running process had not completed withing 8 Hours since start. Trying to kill this zombie process..");
+                    if(!terminateInstance(Long.parseLong(Files.readAllLines(updateLock).get(0)))){
+                        error("Unable to kill the zombie process. Aborting current process.");
+                        exitCode = ERR_DUP_PROCESS;
+                        exit(exitCode);
+                        return;
+                    }
+
+                    /* Try to get lock on the lock file again. */
+                    lock = open(updateLock, CREATE, WRITE).tryLock(0, Long.MAX_VALUE, false);
+                    if(lock == null){
+                        throw new IOException("Lock cannot acquire.");
+                    } else {
+                        lock.channel().write(ByteBuffer.wrap((processId+"").getBytes()));
+                        file.deleteOnExit();
+                    }
+                } else {
+                    error("Another nexial update checker is already running. Aborting current process.");
+                    exitCode = ERR_DUP_PROCESS;
+                    exit(exitCode);
+                }
+            } else {
+                lock.channel().write(ByteBuffer.wrap((processId+"").getBytes()));
+                file.deleteOnExit();
+            }
+        } catch (IOException e) {
+            error("Could not get hold of the lock file. Aborting the run. Reason: " + e.getMessage());
+            exitCode = ERR_UNKNOWN_EXCEPTION;
+            exit(exitCode);
+        }
     }
 
     protected static void exit(int returnCode) { System.exit(returnCode); }

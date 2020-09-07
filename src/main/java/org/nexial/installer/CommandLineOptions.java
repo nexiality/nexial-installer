@@ -30,6 +30,8 @@ public class CommandLineOptions {
     private String installTarget;
     private String backupTarget;
     private boolean keepDownloaded;
+    private boolean isSilentUpdate;
+    private boolean isUpgrade;
 
     private CommandLineOptions() {}
 
@@ -72,6 +74,16 @@ public class CommandLineOptions {
                 continue;
             }
 
+            if (OPT_SILENT_UPDATE.equalsIgnoreCase(opt) || OPT_SILENT_UPDATE_SU.equalsIgnoreCase(opt)) {
+                options.setSilentUpdate(true);
+                continue;
+            }
+
+            if (OPT_UPGRADE_NEXIAL.equalsIgnoreCase(opt) || OPT_UPGRADE_NEXIAL_UN.equalsIgnoreCase(opt)) {
+                options.setUpgrade(true);
+                continue;
+            }
+
             throw new IllegalArgumentException("Unknown commandline argument: " + option);
         }
 
@@ -97,6 +109,22 @@ public class CommandLineOptions {
     public boolean isListOnly() { return listOnly;}
 
     public void setListOnly(boolean listOnly) { this.listOnly = listOnly;}
+
+    public boolean isSilentUpdate() {
+        return isSilentUpdate;
+    }
+
+    public void setSilentUpdate(boolean silentUpdate) {
+        isSilentUpdate = silentUpdate;
+    }
+
+    public boolean isUpgrade() {
+        return isUpgrade;
+    }
+
+    public void setUpgrade(boolean upgrade) {
+        isUpgrade = upgrade;
+    }
 
     @Override
     public String toString() {
