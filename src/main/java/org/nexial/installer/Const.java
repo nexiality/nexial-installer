@@ -53,7 +53,7 @@ final class Const {
                                                                         "template" + separator + "nexial-script.xlsx");
 
     protected static final String APP = "Nexial Installer";
-    protected static final String VERSION = "v1.4.4";
+    protected static final String VERSION = "v1.4.5";
 
     protected static final String PROP_VERSIONS_URL = "nexial.versions.url";
     protected static final String PROP_EDITION = "installer.edition";
