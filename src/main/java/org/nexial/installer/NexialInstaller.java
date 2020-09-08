@@ -579,28 +579,6 @@ public class NexialInstaller {
         }
 
     }
-    /*
-
-    private static void runResumeScript(){
-        Path resumeScriptPath = Paths.get(NEXIAL_INSTALL_DIR, "resume.nx");
-        if(Files.exists(resumeScriptPath)){
-            try {
-                final String resumeCommand = new String(Files.readAllBytes(resumeScriptPath));
-                log("Calling command " + resumeCommand);
-                try {
-                    Runtime.getRuntime().exec(resumeCommand);
-                } catch (IOException e) {
-                    error("Could not restart nexial-core. Reason: " + e.getMessage());
-                }
-            } catch (IOException e) {
-                error("Resume script file is present but failed to read. Reason: " + e.getMessage());
-                log("Nexial will not start automatically.");
-            }
-        } else {
-            log("Resume script not found. Nexial will not start automatically.");
-        }
-    }
-    */
 
     private static void deleteOldStageDirs(Path stageDirLocation) throws IOException {
         Files.list(Paths.get( NEXIAL_DIR, "install"))
