@@ -5,7 +5,8 @@ if not "%1" == "" (
     copy .%1\NexialInstaller.properties src\main\resources\NexialInstaller.properties
 )
 
-call gradle clean distZip installDist
+call gradle clean installDist
+call gradle distZip
 
 if not "%1" == "" (
     copy %TMP%\NexialInstaller.properties src\main\resources\NexialInstaller.properties

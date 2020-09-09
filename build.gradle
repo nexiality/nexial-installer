@@ -92,6 +92,10 @@ task distro {
 }
 
 distributions {
+
+	file("$buildDir/distributions").mkdirs()
+	file("$buildDir/distributions/version.txt").text = version
+
 	main {
 		contents {
 			into('lib') {
@@ -99,6 +103,9 @@ distributions {
 			}
 			into('bin') {
 				from 'bin'
+			}
+			into('/') {
+				from "$buildDir/distributions/version.txt"
 			}
 			into '/'
 		}
