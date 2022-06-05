@@ -16,15 +16,15 @@
 
 package org.nexial.installer;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import static java.io.File.separator;
 
@@ -53,7 +53,7 @@ final class Const {
                                                                         "template" + separator + "nexial-script.xlsx");
 
     protected static final String APP = "Nexial Installer";
-    protected static final String VERSION = "v1.4.5";
+    protected static final String VERSION = "v1.4.6";
 
     protected static final String PROP_VERSIONS_URL = "nexial.versions.url";
     protected static final String PROP_EDITION = "installer.edition";

@@ -502,10 +502,11 @@ public class NexialInstaller {
             backupTarget = null;
 
             try {
-
                 if (isNetworkInstall) {
                     FileUtils.copyDirectory(Paths.get(latestVersionUrlMap.getValue()).toFile(), installTarget);
-                } else { install(latestVersion); }
+                } else {
+                    install(latestVersion);
+                }
 
                 backupTarget = resolveNexialHomeBackup();
                 log("resolved Nexial backup directory as " + backupTarget);
@@ -569,7 +570,7 @@ public class NexialInstaller {
             } catch (IOException e) {
                 error("Failed to update the nexial-core. Stage update directory is not available.");
             }
-            log("Nexial-Core Upgraded Successfully.");
+            log("nexial-core successfully upgraded.");
         } else {
             error("Failed to update the nexial-core. Stage update directory is not available.");
         }
@@ -843,23 +844,34 @@ public class NexialInstaller {
             if (!installTarget.mkdirs()) { throw new IOException("unable to create Nexial installation directory"); }
         }
 
-        // if (backupTarget == null) { throw new IOException("unable to resolve Nexial backup directory"); }
         if (backupTarget != null) {
             log("resolved Nexial backup directory as " + backupTarget);
-
             // remove BACKUP directory
             log("clean up previous backup directory (if exists)...");
-            FileUtils.deleteDirectory(backupTarget);
-
-            log("backing up current Nexial installation...");
-            FileUtils.moveDirectory(installTarget, backupTarget);
-            if (!installTarget.mkdirs()) { throw new IOException("unable to recreate Nexial installation directory"); }
+            try {
+                FileUtils.deleteDirectory(backupTarget);
+                log("backing up current Nexial installation...");
+                FileUtils.moveDirectory(installTarget, backupTarget);
+            } catch (IOException e) {
+                System.err.println("\n!!! ERROR !!!");
+                System.err.println("UNABLE TO DELETE BACKUP DIRECTORY '" + backupTarget + "'");
+                System.err.println("EXISTING NEXIAL INSTALLATION DIRECTORY WILL NOT BE BACKED UP...\n");
+            }
         } else {
             // need to remove current install directory before we can unzip into it
             log("delete Nexial installation directory");
-            FileUtils.deleteDirectory(installTarget);
-            if (!installTarget.mkdirs()) { throw new IOException("unable to recreate Nexial installation directory"); }
+            try {
+                FileUtils.deleteDirectory(installTarget);
+            } catch (IOException e) {
+                System.err.println("\n!!! ERROR !!!");
+                System.err.println("UNABLE TO DELETE NEXIAL INSTALLATION DIRECTORY '" + installTarget + "'");
+                System.err.println("MAKE SURE THIS DIRECTORY IS NOT CURRENTLY OPEN (Explorer or CMD, for example),");
+                System.err.println("AND NONE OF ITS FILES ARE OPENED BY OTHER PROGRAMS (Excel, for example).");
+                throw e;
+            }
         }
+
+        if (!installTarget.mkdirs()) { throw new IOException("unable to recreate Nexial installation directory"); }
 
         // unzip distro
         log("unzipping Nexial distro to installation directory...");

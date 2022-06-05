@@ -17,6 +17,10 @@ set INSTALLER_HOME=%~dp0..
 :run-installer
     java -jar %INSTALLER_HOME%\lib\nexial-installer.jar %*
 	set RC=%ERRORLEVEL%
+	if not "%RC%"=="0" (
+		echo CRITICAL ERROR OCCURRED; SEE ABOVE
+		pause
+	)
 
 :all-done
     endlocal
