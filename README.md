@@ -25,8 +25,8 @@ In a nutshell, the installer performs the following activities:
 
 
 ### Get Installer
-The latest version is 1.4.6. Click on the link below to get the installer.
-- [Nexial Installer v1.4.6](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.4.6/nexial-installer-1.4.6.zip)
+The latest version is 1.4.7. Click on the link below to get the installer.
+- [Nexial Installer v1.4.7](https://github.com/nexiality/nexial-installer/releases/download/nexial-installer-v1.4.7/nexial-installer-1.4.7.zip)
 
 Note that 1.4.* is drastically different than the previous versions. Release 1.3 (and prior) utilize batch files (Windows),
 shell scripts (*NIX/Mac) and a set of command line tools to perform the installation process. In order to support more

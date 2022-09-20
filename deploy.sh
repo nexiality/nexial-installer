@@ -7,6 +7,7 @@ fi
 
 chmod -fR 755 bin/*.sh
 gradle clean installDist
+chmod -fR 755 build/install/nexial-installer/bin/*.sh
 gradle distZip
 
 if [[ "$1" != "" ]]; then

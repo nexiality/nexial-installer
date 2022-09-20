@@ -51,16 +51,17 @@ configurations {
 sourceSets.main.compileClasspath += configurations.provided
 
 dependencies {
-	compile("com.google.code.gson:gson:${gsonVersion}")
-	compile("commons-io:commons-io:${commonsIoVersion}")
-	compile("org.apache.commons:commons-lang3:${commonsLangVersion}")
+	implementation("com.google.code.gson:gson:${gsonVersion}")
+	implementation("commons-io:commons-io:${commonsIoVersion}")
+	implementation("org.apache.commons:commons-lang3:${commonsLangVersion}")
 
-	testCompile("junit:junit:${junitVersion}")
+	testImplementation("junit:junit:${junitVersion}")
 }
 
 jar {
 	// fixed jar name to simplify batch file
 	archiveName = "${componentName}.jar"
+
 	manifest {
 		attributes "Implementation-Title": archivesBaseName,
 		           "Implementation-Version": version,
@@ -68,8 +69,10 @@ jar {
 	}
 
 	from {
-		configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 	}
+
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 compileJava.dependsOn(processResources)
